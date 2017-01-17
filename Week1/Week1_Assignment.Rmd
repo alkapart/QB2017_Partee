@@ -51,7 +51,7 @@ In the R code chunk below, please provide the code to:
 ```{r}
 rm(list=ls())
 getwd()
-setwd("/Users/alkapart/GitHub/QB2017_Partee")
+setwd("/Users/flopsei/GitHub/QB2017_Partee/Week1")
 ```
 
 ## 3) USING R AS A CALCULATOR
@@ -97,7 +97,7 @@ In the R code chunk below, do the following:
 3) Add `x` and `w` and divide by 15.
 
 ```{r}
-x <- c(4, 28, 3, -9, i)
+x <- c(4, 28, 3, -9, 1)
 w <- x*14
 (x+w)/15
 
@@ -122,17 +122,29 @@ In the R code chunk below, calculate the **summary statistics** (i.e., maximum, 
 ```{r}
 v <- c(16.4, 16.0, 10.1, 16.8, 20.5, NA, 20.2, 13.1, 24.8, 20.2, 25.0, 20.5, 30.5, 31.4, 27.1)
 
+#max of v
+vmax <- max(v)
 
+#min of v
+vmin <- min(v)
 
+#sum of v
+vsum <- sum(v)
 
+#mean of v
+vmean <-mean(v)
 
+#median of v
+vmed <- median(v)
 
+#variance of v
+vvar <- var(v)
 
+#standard deviation of v
+vsd <- sd(v)
 
-
-
-
-
+#standard error of the mean for v
+v_sterror <- sd(v)/sqrt(length(v))
 
 ```
 
@@ -144,18 +156,20 @@ Both columns should consist of random numbers.
 Make the mean of the first column equal to 8 with a standard deviation of 2 and the mean of the second column equal to 25 with a standard deviation of 10.
 
 ```{r}
+x <- c(rnorm(5,mean = 8, sd = 2))
+y <- c(rnorm(5, mean = 25, sd = 10))
 
-
-
-
-
+xy <- cbind(x,y)
 ```
 
 ***Question 1***: What does the `rnorm` function do? 
 What do the arguments in this function specify? 
 Remember to use `help()` or type `?rnorm`.
 
-> Answer 1:
+> Answer 1: The first argument in the rnorm function specifies the length of the 
+> vector you are creating. The second parameter we use, mean, specifies the mean of
+> the values within the vector. The second parameter we're using, sd, specifies the 
+> standard deviation of the values within our vector.
 
 
 In the R code chunk below, do the following: 
@@ -164,15 +178,16 @@ In the R code chunk below, do the following:
 3) Determine the dimensions of the transposed matrix.
 
 ```{r}
-
-
+m <- as.matrix(read.table("data/matrix.txt", sep = "\t", header = FALSE))
+mtransposed <- t(m)
+mtdim <- dim(mtransposed)
 
 ```
 
 
 ***Question 2***: What are the dimensions of the matrix you just transposed?
 
-> Answer 2:
+> Answer 2: 5 rows by 10 columns
 
 
 ###Indexing a Matrix
@@ -183,12 +198,27 @@ In the R code chunk below, do the following:
 
 ```{r}
 
+#m without the third column
+mno3c <- m[, c(1:2,4:dim(m)[2])]
+
+# m without the last row
+mnolastr <- m[1:dim(m)[1]-1,]
+
 
 ```
 
 ***Question 3***: Describe what we just did in the last series of indexing steps.
 
-> ***Answer 3***:
+> ***Answer 3***: 
+
+> To index matrix m by selecting all but the third column, I indexed matrix m by all
+> rows and selected the columns by creating a vector with the numbers of the columns
+> I want. In this case, the columns I want are 1,2,and then columns 4 until the last
+> column.
+
+> To return a copy of matrix m without the last row, I index matrix m by selecting all
+> but the last row and all columns. This returns a copy of matrix m without the last 
+> row.
 
 
 ## 6) BASIC DATA VISUALIZATION AND STATISTICAL ANALYSIS
@@ -200,6 +230,11 @@ In the R code chunk below, do the following:
 
 ```{r}
 
+#load the dataset
+meso <- read.table("data/zoop_nuts.txt", sep = "\t", header = TRUE)
+
+#display the structure of the dataset
+str(meso)
 
 ```
 
@@ -212,13 +247,22 @@ In the R code chunk below, do the following:
 
 ```{r}
 
+#create a matrix with the numerical meso data
+meso.num <- meso[,3:dim(meso)[2]]
+
+#visualize the pairwise bi-plots of the six numerical variables
+pairs(meso.num)
+
+#conduct a simple Pearson's correlation analysis
+cor1 <- cor(meso.num)
 
 ```
 
 
 ***Question 4***: Describe some of the general features based on the visualization and correlation analysis above?
 
-> Answer 4:
+> Answer 4: The visualization above shows small plots of each variable combination. 
+> The correlation analysis gives correlation coefficients for each respecive plot.
 
 
 In the R code chunk below, do the following:
@@ -227,7 +271,22 @@ In the R code chunk below, do the following:
 3) Use the print command from the handout to see the results of each correlation analysis.
 
 ```{r}
+# install the psych package
+# install.packages("psych", repos="http://cran.rstudio.com/")
 
+# load the psych package
+require("psych")
+
+# redo the correlation alalysis using the corr.test() function in the psych package 
+# with method = "pearson" and adjust = "BH"
+cor2 <- corr.test(meso.num, method = "pearson", adjust = "BH")
+
+# redo the correlation analusis using a non-parametric method
+cor3 <- corr.test(meso.num, method = "kendall", adjust = "BH")
+
+# use the print command to see the correlation results
+print(cor2, digits = 3)
+print(cor3, digits = 3)
 
 
 ```
@@ -238,13 +297,24 @@ Specifically, are the results sensitive to whether you use parametric (i.e., Pea
 When should one use non-parametric methods instead of parametric methods?
 With the Pearson's method, is there evidence for false discovery rate due to multiple comparisons? Why is false discovery rate important?
 
-> ***Answer 5***: 
+> ***Answer 5***: Yes, the corr.test values were different depending on whether a 
+> parametric parameter was given or a non-parametric parameter. Non-parametric methods
+> should be used when sample sizes are small. Since the values in the upper half of 
+> the matrix above the diagonal differ from their respective values in the lower
+> triangular part of the matrix, there is evidence for false discovery rate due to
+> multiple comparisons. The false discovery rate is important because it detects the 
+> proportion of type I errors when making multiple comparisons.
 
 
 In the R code chunk below, use the `corrplot` function in the *corrplot* package to produce the ellipse correlation plot in the handout.
 
 ```{r}
+# install.packages("corrplot", repos="http://cran.rstudio.com/")
+require("corrplot")
 
+#produce the ellipse correlation plot
+corrplot(cor1, method = "ellipse")
+dev.off()
 
 ```
 
@@ -257,9 +327,24 @@ In the R code chunk below, do the following:
 
 ```{r}
 
+fitreg <- lm(ZP ~ TN, data = meso)
 
+summary(fitreg)
 
+plot(meso$TN, meso$ZP, ylim = c(0,10), xlim = c(500,5000), xlab = expression(paste("Total Nitrogen (", mu, "g/L)")), ylab = "Zooplankton Biomass (mg/L)", las = 1)
+text(meso$TN, meso$ZP, meso$NUTS, pos = 3, cex = 0.8)
+newTN <- seq(min(meso$TN), max(meso$TN), 10)
+regline <- predict(fitreg, newdata = data.frame(TN = newTN))
+lines(newTN, regline)
 
+#create and plot the confidence intervals
+text(meso$TN, meso$ZP, meso$NUTS, pos = 3, cex = 0.8)
+newTN <- seq(min(meso$TN), max(meso$TN), 10)
+regline <- predict(fitreg, newdata = data.frame(TN = newTN))
+lines(newTN, regline)
+#the line above calls the previous figure object
+conf95 <- predict(fitreg, newdata = data.frame(TN = newTN), interval = c("confidence"), level = 0.95, type = "response")
+matlines(newTN, conf95[, c("lwr", "upr")], type="l", lty = 2, lwd = 1, col = "black")
 
 
 
@@ -267,17 +352,21 @@ In the R code chunk below, do the following:
 
 ***Question 6***: Interpret the results from the regression model
 
-> ***Answer 6***:
+> ***Answer 6***: Total nitrogen and zooplankton biomass are strongly positively
+> correlated in this data set. 
 
 
 
 ***Question 7***: Explain what the `predict()` function is doing in our analyses.
 
-> ***Answer 7***:
+> ***Answer 7***: The predict() function is predicting the values for our confidence 
+> intervals using the model we give it and a given range of x values.
 
 Using the R code chunk below, use the code provided in the handout to determine if our data meet the assumptions of the linear regression analysis. 
 
 ```{r}
+par(mfrow = c(2,2), mar = c(5.1, 4.1, 4.1, 2.1))
+plot(fitreg)
 
 ```
 
@@ -297,9 +386,39 @@ Using the R code chunk below, do the following:
 
 ```{r}
 
+# order the treatments from low to high
+NUTS <- factor(meso$NUTS, levels = c('L', 'M', 'H'))
 
+# calculate the means and standard errors for zooplankton biomass
+zp.means <- tapply(meso$ZP, NUTS, mean)
 
+sem <- function(x){
+  sd(na.omit(x))/sqrt(length(na.omit(x)))
+}
 
+zp.sem <- tapply(meso$ZP, NUTS, sem)
+
+# make the bar plot
+bp <- barplot(zp.means, ylim = c(0, round(max(meso$ZP), digits = 0)), pch = 15, 
+              cex =1.25, las = 1, cex.lab = 1.4, cex.axis = 1.25, 
+              xlab = "nutrient supply", ylab = "zooplankton biomass (mg/L)", names.arg = c("low", "medium", "high"))
+
+#add the error bars
+arrows(x0 = bp, y0 = zp.means, y1 = zp.means - zp.sem, angle = 90, length = 0.1, 
+       lwd = 1)
+arrows(x0 = bp, y0 = zp.means, y1 = zp.means + zp.sem, angle = 90, length = 0.1, 
+       lwd = 1)
+
+#conduct a one-way analysis of variance (ANOVA)
+fitanova <- aov(ZP ~ NUTS, data = meso)
+
+#look at the output with more detail
+summary(fitanova)
+
+#conduct a post-hoc comparison of treatments using Tukey's HSD 
+# this will tell us whether or not there are differences (alpha = 0.05) among pairs
+# of the three nutrient treatments
+TukeyHSD(fitanova)
 
 
 
@@ -308,12 +427,24 @@ Using the R code chunk below, do the following:
 ***Question 8***: How do you interpret the ANOVA results relative to the regression results?
 Do you have any concerns about this analysis?
 
-> ***Answer 8***:
-
+> ***Answer 8***: Since the regression results showed a strong linear fit, 
+> there appears to be a strong linear relationship between total nitrogen and
+> zooplankton biomass. The Tukey's HSD results showed adjusted p values lower than 
+> 0.5 for the Low vs High and Medium vs High comparisons, meaning the high nutrient
+> treatment significantly differed from the other two treatments. However, my 
+> concerns about this analysis would center on the lack of difference between the low
+> and medium nutient levels treatments, because the ANOVA and Tukey's HSD results
+> showed there was no significant difference, as the adjusted p value is > 0.05. 
+> Given the type of data and ANOVA results, I would suggest the linear regression 
+> model is a better fit for this data.
 
 Using the R code chunk below, use the diagnostic code provided in the handout to determine if our data meet the assumptions of ANVOA (similar to regression). 
 
 ```{r}
+
+#look at the residuals
+par(mfrow = c(2,2), mar = c(5.1, 4.1, 4.1, 2.1))
+plot(fitanova)
 
 ```
 
@@ -343,10 +474,69 @@ The remaining columns of data refer to the biomass (µg/L) of different zooplank
 
 ***Question 9***: With the visualization and statistical tools that we learned about in the Week 1 Handout, use the site-by-species matrix to assess whether and how different zooplankton taxa were responsible for the total biomass (ZP) response to nutrient enrichment. Describe what you learned below in the "Answer" section and include appropriate code in the R chunk.
 
+> ***Answer 9***: Using the code below, I plotted the different species against the 
+> total nitrogen values in each tank. The only species that followed the same general 
+> trend as the overall data were Simocephallus and Chydorus. They also had by far the 
+> largest numbers on the y-axis. Given that they were the only two that followed the 
+> same trend and had higher numbers than the other species, I would say that 
+> Simocephallus and Chydorus are the most responsible for the total biomass response
+> to nutrient enrichment.
+
 ```{r}
 
+#load zoops.txt data
+zoops <- read.table("data/zoops.txt", sep = "\t", header = TRUE)
 
+sortedmeso <- meso[order(meso$TANK), ]
+sortedzoops <- zoops[order(zoops$TANK),]
 
+zoopsnums <- cbind(sortedzoops[,3:dim(sortedzoops)[2]], sortedmeso$TN)
+names(zoopsnums)[10] <- "TN"
+
+#fit a lin reg model to all species
+
+par(mfrow=c(3,3))
+
+lmCAL <- lm(CAL ~ TN, data = zoopsnums)
+lmDIAP <- lm(DIAP ~ TN, data = zoopsnums)
+lmCYCL <- lm(CYCL ~ TN, data = zoopsnums)
+lmBOSM <- lm(BOSM ~ TN, data = zoopsnums)
+lmSIMO <- lm(SIMO ~ TN, data = zoopsnums)
+lmCERI <- lm(CERI ~ TN, data = zoopsnums)
+lmNAUP <- lm(NAUP ~ TN, data = zoopsnums)
+lmDLUM <- lm(DLUM ~ TN, data = zoopsnums)
+lmCHYD <- lm(CHYD ~ TN, data = zoopsnums)
+
+#get new x values for the model
+newTN <- seq(min(zoopsnums$TN), max(zoopsnums$TN), 10)
+
+plot(zoopsnums$TN, zoopsnums$CAL, xlab = "Total Nitrogen", ylab = "Zooplankton", main = "CAL")
+CALregline <- predict(lmCAL, newdata = data.frame(TN = newTN))
+lines(newTN, CALregline)
+plot(zoopsnums$TN, zoopsnums$DIAP, xlab = "Total Nitrogen", ylab = "Zooplankton", main = "DIAP")
+DIAPregline <- predict(lmDIAP, newdata = data.frame(TN = newTN))
+lines(newTN, DIAPregline)
+plot(zoopsnums$TN, zoopsnums$CYCL, xlab = "Total Nitrogen", ylab = "Zooplankton", main = "CYCL")
+CYCLregline <- predict(lmCYCL, newdata = data.frame(TN = newTN))
+lines(newTN, CYCLregline)
+plot(zoopsnums$TN, zoopsnums$BOSM, xlab = "Total Nitrogen", ylab = "Zooplankton", main = "BOSM")
+BOSMregline <- predict(lmBOSM, newdata = data.frame(TN = newTN))
+lines(newTN, BOSMregline)
+plot(zoopsnums$TN, zoopsnums$SIMO, xlab = "Total Nitrogen", ylab = "Zooplankton", main = "SIMO")
+SIMOregline <- predict(lmSIMO, newdata = data.frame(TN = newTN))
+lines(newTN, SIMOregline)
+plot(zoopsnums$TN, zoopsnums$CERI, xlab = "Total Nitrogen", ylab = "Zooplankton", main = "CERI")
+CERIregline <- predict(lmCERI, newdata = data.frame(TN = newTN))
+lines(newTN, CERIregline)
+plot(zoopsnums$TN, zoopsnums$NAUP, xlab = "Total Nitrogen", ylab = "Zooplankton", main = "NAUP")
+NAUPregline <- predict(lmNAUP, newdata = data.frame(TN = newTN))
+lines(newTN, NAUPregline)
+plot(zoopsnums$TN, zoopsnums$DLUM, xlab = "Total Nitrogen", ylab = "Zooplankton", main = "DLUM")
+DLUMregline <- predict(lmDLUM, newdata = data.frame(TN = newTN))
+lines(newTN, DLUMregline)
+plot(zoopsnums$TN, zoopsnums$CHYD, xlab = "Total Nitrogen", ylab = "Zooplankton", main = "CHYD")
+CHYDregline <- predict(lmCHYD, newdata = data.frame(TN = newTN))
+lines(newTN, CHYDregline)
 
 ```
 
