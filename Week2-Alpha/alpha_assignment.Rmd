@@ -1,6 +1,6 @@
 ---
 title: "Assignment: Local (alpha) Diversity"
-author: "Student Name; Z620: Quantitative Biodiversity, Indiana University"
+author: "Alison Partee; Z620: Quantitative Biodiversity, Indiana University"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: pdf_document
 geometry: margin=2.54cm
@@ -35,7 +35,12 @@ In the R code chunk below, please provide the code to:
 4) Load the `vegan` R package (be sure to install if needed).
 
 ```{r}
+rm(list=ls())
+getwd()
+setwd("/Users/alkapart/GitHub/QB2017_Partee/Week2-Alpha/")
 
+#install.packages("vegan")
+require("vegan")
 
 
 
@@ -48,7 +53,11 @@ In the R code chunk below, do the following:
 2) Display the structure of the dataset (if the structure is long, use `max.level=0` to show just basic information).
 
 ```{r}
+#load dataset
+data(BCI)
 
+#display the structure of the dataset
+str(BCI, max.level = 0)
 
 ```
 
@@ -68,16 +77,33 @@ In the R code chunk below, do the following:
 
 ```{r}
 
-# S.obs <- function(   ){
-#   rowSums(     ) * 
-#   }
+#write a function to calculate observed richness
+S.obs <- function(x = ""){
+  # input: site by species matrix
+  # output: vector of named nums
+  # purpose: sums the amount of cells > 0 for each row
+  rowSums(x > 0)
+  }
+S.obs(BCI)
+
+#determine the number of species in site1
+speccount1 <- S.obs(BCI)[[1]]
+
+#output of the specnumber() function in vegan
+vspeccount1 <- specnumber(BCI)[[1]]
+
 
 ```
 
 ***Question 1***: Does `specnumber()` from `vegan` return the same value for observed richness in `site1` as our function `S.obs`?
 What is the species richness of the first 4 sites (i.e., rows) of the BCI matrix?
 
-> ***Answer 1***:
+> ***Answer 1***: 
+> Yes, they both returned the same value for observed richness. 
+> Species richness for site 1: 93
+> Species richness for site 2: 84
+> Species richness for site 3: 90
+> Species richness for site 4: 94
 
 
 
@@ -91,6 +117,15 @@ In the R code chunk below, do the following:
 
 ```{r}
 
+#write a function for Good's Coverage
+C <- function(x = ""){
+  #input: site by species matrix
+  #output: vector of Good's Coverage per site
+  1 - (rowSums(x == 1) / rowSums(x))
+}
+
+#use the function to calculate coverage for all sites
+sitecoverage <- C(BCI)
 
 ```
   
