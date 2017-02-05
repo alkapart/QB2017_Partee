@@ -1,6 +1,6 @@
 ---
 title: "Assignment: Spatial Diversity"
-author: "Student Name; Z620: Quantitative Biodiversity, Indiana University"
+author: "Alison Partee; Z620: Quantitative Biodiversity, Indiana University"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: pdf_document
 geometry: margin=2.54cm
@@ -38,6 +38,9 @@ In the R code chunk below, provide the code to:
 
 ```{r, results = 'hide'}
 
+rm(list=ls())
+getwd() 
+setwd("/Users/alkapart/GitHub/QB2017_Partee/Week4-Spatial")
 
 ```
 
@@ -50,12 +53,33 @@ In the R code chunk below, do the following:
 ```{r, results = 'hide', message = FALSE, warning = FALSE} 
 
 
+# install.packages('sp') # Classes and methods for handling spatial data 
+# install.packages('gstat') # Methods for geostatistical analyses
+# install.packages('raster') # Methods to create a RasterLayer object 
+# install.packages('RgoogleMaps') # For querying the Google server for static maps. 
+# install.packages('maptools') # Tools for manipulating and reading geospatial data 
+# install.packages('rgdal') # Geospatial Data Abstraction Library
+# install.packages('simba') # Similarity measures for community data
+# install.packages('gplots') # Programming tools for plotting data
+# install.packages('rgeos') # Geostatistical package, used here for semivariograms 
+
+require(rgeos)
+require(rgdal)
+require(vegan)
+require(gplots)
+require(simba)
+require(rgdal)
+require(gstat)
+require(maptools)
+require(RgoogleMaps)
+require(raster)
+require(sp)
 
 ```
 
 ***Question 1***:  What are the packages `simba`, `sp`, and `rgdal` used for?
 
-> ***Answer 1***:  
+> ***Answer 1***:  'simba' is used for its functions that do similarity analysis of vegetation data. 'sp' is a package for spatial data. 'rgdal' is for the Geospatial Data Abstraction Library.
 
 
 ## 3) LOADING DATA
@@ -68,16 +92,36 @@ In the R code chunk below, use the example in the handout to do the following:
 
 ```{r, results = 'hide', message = FALSE, warning = FALSE} 
 
+Ponds <- read.table(file = "BrownCoData/20130801_PondDataMod.csv", head = TRUE, sep = ",") 
+OTUs <- read.csv(file = "BrownCoData/SiteBySpecies.csv", head = TRUE, sep = ",")
+otu.names <- names(OTUs) # Get the names of the OTUs
+OTUs <- as.data.frame(OTUs[-1]) # remove first column (site names)
+
+S.obs <- function(x = ""){
+  # input: site by species matrix
+  # output: vector of named nums
+  # purpose: sums the amount of cells > 0 for each row
+  rowSums(x > 0)
+}
+
+siterichs <- S.obs(OTUs)
+maxrich <- max(siterichs)
+maxrich
+maxrichsite <- Ponds$Sample_ID[siterichs == maxrich]
+maxrichsite
+
+  
+
 
 ```
 
 ***Question 2a***:  How many sites and OTUs are in the SiteBySpecies matrix? 
 
-> ***Answer 2a***:  
+> ***Answer 2a***:  There are 51 sites and 16,383 OTUS in the SitebySpecies matrix.
 
 ***Question 2b***:  What is the greatest species richness found among sites?
 
-> ***Answer 2b***:  
+> ***Answer 2b***:  The greatest richness value is 3659 in the YSF66 sample.
 
 
 ## 4) GENERATE MAPS
@@ -89,11 +133,18 @@ This map will be centered on Brown County, Indiana (39.1 latitude, -86.3 longitu
 
 ```{r}
 
+lats <- as.numeric(Ponds[, 3]) # latitudes (north and south) 
+lons <- as.numeric(Ponds[, 4]) # longitudes (east and west)
+newmap <- GetMap(center = c(39.1,-86.3), zoom = 10,
+destfile = "PondsMap.png", maptype="terrain")
+PlotOnStaticMap(newmap, zoom = 10, cex = 2, col = 'blue') # Plot map in RStudio 
+PlotOnStaticMap(newmap, lats, lons, cex = 1, pch = 20, col = 'red', add = TRUE)
+
 ```
 
 ***Question 3***:  Briefly describe the geographical layout of our sites.
 
-> ***Answer 3***:  
+> ***Answer 3***:  They tend to be grouped into a few clumps, although there are a few that are more spread out.
 
 
 In the R code chunk below, do the following:  
@@ -102,22 +153,29 @@ In the R code chunk below, do the following:
 
 ```{r}
 # 1. Import TreeCover.tif as a raster file.
+Tree.Cover <- raster("TreeCover/TreeCover.tif") # import TreeCover.tif as a raster file.
 
 # 2. Plot the % tree cover data
+plot(Tree.Cover, xlab = 'Longitude', ylab = 'Latitude', 
+     main = 'Map of geospatial data for % tree cover,\nwater bodies, and sample sites')
 
 # 3. Import water bodies as a shapefile.
+Water.Bodies <- readShapeSpatial("water/water.shp") # import water bodies as a shapefile.
 
 # 4. Plot the water bodies around our study area, i.e., Monroe County.
+plot(Water.Bodies, border='cyan', axes = TRUE, add = TRUE)
 
 # 5. Convert lat-long data for ponds to georeferenced points.
+Refuge.Ponds <- SpatialPoints(cbind(lons, lats)) # convert lat-long data for ponds to georeferenced poin 
 
 # 6. Plot the refuge pond locations
+plot(Refuge.Ponds, line='r', col='red', pch = 20, cex = 1.5, add = TRUE)
 
 ```
 
 ***Question 4a***: What are datums and projections?
 
-> ***Answer 4a***:  
+> ***Answer 4a***:  The datum is the model of Earth's shape. The projection is the way in which coordinates on the sphere are projected onto the 2-D surface. 
 
 
 ## 5) UNDERSTANDING SPATIAL AUTOCORRELATION
