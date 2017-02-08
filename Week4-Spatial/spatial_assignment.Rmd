@@ -1,8 +1,10 @@
 ---
-title: "Assignment: Spatial Diversity"
-author: "Alison Partee; Z620: Quantitative Biodiversity, Indiana University"
+title: 'Assignment: Spatial Diversity'
+author: 'Alison Partee; Z620: Quantitative Biodiversity, Indiana University'
 date: "`r format(Sys.time(), '%d %B, %Y')`"
-output: pdf_document
+output:
+  html_document: default
+  pdf_document: default
 geometry: margin=2.54cm
 ---
 
@@ -40,7 +42,7 @@ In the R code chunk below, provide the code to:
 
 rm(list=ls())
 getwd() 
-setwd("/Users/alkapart/GitHub/QB2017_Partee/Week4-Spatial")
+setwd("/Users/flopsei/GitHub/QB2017_Partee/Week4-Spatial")
 
 ```
 
@@ -53,22 +55,21 @@ In the R code chunk below, do the following:
 ```{r, results = 'hide', message = FALSE, warning = FALSE} 
 
 
-# install.packages('sp') # Classes and methods for handling spatial data 
+# install.packages('sp') # Classes and methods for handling spatial data
 # install.packages('gstat') # Methods for geostatistical analyses
-# install.packages('raster') # Methods to create a RasterLayer object 
-# install.packages('RgoogleMaps') # For querying the Google server for static maps. 
-# install.packages('maptools') # Tools for manipulating and reading geospatial data 
+# install.packages('raster') # Methods to create a RasterLayer object
+# install.packages('RgoogleMaps') # For querying the Google server for static maps.
+# install.packages('maptools') # Tools for manipulating and reading geospatial data
 # install.packages('rgdal') # Geospatial Data Abstraction Library
 # install.packages('simba') # Similarity measures for community data
 # install.packages('gplots') # Programming tools for plotting data
-# install.packages('rgeos') # Geostatistical package, used here for semivariograms 
+# install.packages('rgeos') # Geostatistical package, used here for semivariograms
 
 require(rgeos)
 require(rgdal)
 require(vegan)
 require(gplots)
 require(simba)
-require(rgdal)
 require(gstat)
 require(maptools)
 require(RgoogleMaps)
@@ -182,14 +183,14 @@ plot(Refuge.Ponds, line='r', col='red', pch = 20, cex = 1.5, add = TRUE)
 
 ***Question 5***: In your own words, explain the concept of spatial autocorrelation.
 
-> ***Answer 5***:
+> ***Answer 5***: Spatial autocorrelation reveals whether variables are closer together in space which indicates positive autocorrelation, or randomly distributed in space, which indicates negative autocorrelation. 
 
 
 ## 6) EXAMINING DISTANCE-DECAY
 
 ***Question 6***: In your own words, explain what a distance decay pattern is and what it reveals.
 
-> ***Answer 6***:
+> ***Answer 6***: The distance decay pattern shows the relationship between increasing geographic distance and decreasing similarity between environments.
 
 In the R code chunk below, do the following:  
 
@@ -197,39 +198,94 @@ In the R code chunk below, do the following:
 Note: You will need to use some of the data transformations within the *semivariogram* section of the handout.
 
 ```{r, results = 'hide', message = FALSE, warning = FALSE}
+
+# Construct a new dataframe for coordinates
+xy <- data.frame(env = Ponds$TDS, pond.name = Ponds$Sample_ID, lats = Ponds$lat, lons = Ponds$long)
+coordinates(xy) <- ~lats+lons # Transform 'xy' into a spatial points dataframe
+
+# Identify the current projection (i.e., lat-long) and datum (NAD83). In our case, the projection and datum 
+proj4string(xy) <- CRS("+proj=longlat +datum=NAD83") # coordinate reference system (CRS)
+
+# Then, transform the projection and data so we can get meaningful georeferenced distances. In this case, 
+UTM <- spTransform(xy, CRS("+proj=utm +zone=51 +ellps=WGS84")) # coordinate reference system (CRS)
+
+UTM <- as.data.frame(UTM)
+
+xy$lats_utm <- UTM[,2] # lattitude data according to UTM
+
+xy$lons_utm <- UTM[,3] # longitude data according to UTM
+
+#coordinates(xy) = ~lats_utm+lons_utm # Step required by the variogram function
+# Examine the semivariance with regards to one of our environmental variables
+env.vgm <- variogram(env~1, data=xy)
+plot(env.vgm)
+
+Moran(Tree.Cover)
+
+TC.Moran <- MoranLocal(Tree.Cover)
+
+plot(TC.Moran, xlab="Longitude", ylab="Latitude",
+main="Spatial autocorrelation in % tree cover\nacross our sampled landscape",
+col=rainbow(11, alpha=1))
+
+
 # 1) Calculate Bray-Curtis similarity between plots using the `vegdist()` function
+comm.dist <- 1 - vegdist(OTUs)
 
 # 2) Assign UTM lattitude and longitude data to 'lats' and 'lons' variables
+lats <- as.numeric(xy$lats_utm) # lattitude data
+lons <- as.numeric(xy$lons_utm) # longitude data
 
 # 3) Calculate geographic distance between plots and assign to the variable 'coord.dist'
+coord.dist <- dist(as.matrix(lats, lons))
 
 # 4) Transform environmental data to numeric type, and assign to variable 'x1'
+x1 <- as.numeric(Ponds$"SpC")
 
 # 5) Using the `vegdist()` function in `simba`, calculate the Euclidean distance between the plots for environmental variables. Assign the result to the variable 'env.dist'
+env.dist <- vegdist(x1, "euclidean")
 
 # 6) Transform all distance matrices into database format using the `liste()` function in `simba`:
+comm.dist.ls <- liste(comm.dist, entry="comm")
+env.dist.ls <- liste(env.dist, entry="env")
+coord.dist.ls <- liste(coord.dist, entry="dist")
 
 # 7) Create a data frame containing similarity of the environment and similarity of community.
+df <- data.frame(coord.dist.ls, env.dist.ls[,3], comm.dist.ls[,3])
 
 # 8) Attach the columns labels 'env' and 'struc' to the dataframe you just made.
+names(df)[4:5] <- c("env", "struc")
+attach(df)
 
 # 9) After setting the plot parameters, plot the distance-decay relationships, with regression lines in red.
+par(mfrow=c(1, 2), pty="s")
+plot(env, struc, xlab="Environmental Distance", ylab="1 - Bray-Curtis",
+main = "Environment", col='SteelBlue')
+OLS <- lm(struc ~ env)
+OLS # print regression results to the screen
+abline(OLS, col="red4")
+plot(dist, struc, xlab="Geographic Distance", ylab="1 - Bray-Curtis",
+main="Community\nComposition", col='darkorchid4')
+OLS <- lm(struc ~ dist)
+OLS # print regression results to the screen
+abline(OLS, col="red4")
 
 # 10) Use `simba` to calculates the difference in slope or intercept of two regression lines
+diffslope(env, struc, dist, struc) # a function in simba that calculates the difference in slope or intercept
 
 ```
 
 
 ***Question 7***: What can you conclude about community similarity with regars to environmental distance and geographic distance?
 
-> ***Answer 7***: 
+> ***Answer 7***: Species similarity decreased with both increasing environmental distance and increasing geographic distance. The relationship between similarity and environmental distance is stronger.
 
 
 ## 7) EXAMINING SPECIES SPATIAL ABUNDANCE DISTRIBUTIONS
 
 ***Question 8***: In your own words, explain the species spatial abundance distribution and what it reveals.
 
-> ***Answer 8***:
+> ***Answer 8***: The species abundance distribution groups species by their abundance counts, and shows the frequency of species at each abundance level.
 
 
 In the R code chunk below, do the following: 
@@ -238,13 +294,40 @@ In the R code chunk below, do the following:
 2. Draw six OTUs at random from the IN ponds dataset and and plot their SSADs as kernel density curves. Use **while loops** and **if** statements to accomplish this.
 
 ```{r}
+
+#how does total abundance 16S rRNA genes differ among our ponds
+siteN <- rowSums(OTUs) # Abundances in each plot
+siteN
+
+# plot our data as an abundance distribution
+par(mfrow=c(1, 1), pty="s")
+plot(density(siteN), col = 'magenta', xlab='Site abundance',
+ylab='Probability Density', main = 'IN Ponds\nabundance distribution')
+
 # 1. Define an SSAD function
+ssad <- function(x){
+  ad <- c(2, 2)
+  ad <- OTUs[, otu]
+  ad = as.vector(t(x = ad))
+  ad = ad[ad > 0]
+}
 
 # 2. Set plot parameters
+par(mfrow=c(2, 2))
 
 # 3. Declare a counter variable
+ct <- 0
 
 # 4. Write a while loop to plot the SSADs of six species chosen at random 
+while (ct < 4){ # While the ct variable is less than 4, do ...
+  otu <- sample(1:length(OTUs), 1) # choose 1 random OTU (i.e., a random column of the site-by-species matrix)
+  ad <- ssad(otu) # find the OTU's SSAD
+  if (length(ad) > 10 & sum(ad > 100)){ # if the species is present in at least 10 sites and has an overall 
+    ct <- ct + 1
+    plot(density(ad), col = 'red', xlab='Site abundance',
+         ylab='Probability Density', main = otu.names[otu])
+    }
+}
 
 ```
 
@@ -254,14 +337,14 @@ Many patterns of biodiversity relate to spatial scale.
 
 ***Question 9***:  List, describe, and give examples of the two main aspects of spatial scale
 
-> ***Answer 9***: 
+> ***Answer 9***: The two main aspects of spatial scale are extent and grain. Extent is the largest distance considered in your data, and grain is the smallest unit that is measured. Extent usually refers to the size of the area you are studying, so if your study area is 10 ha, your extent is 10 ha. Grain could be the size of each plot being measured, so if you are measuring 1 ha subplots your grain would be 1 ha.
 
 
 ## 9) CONSTRUCTING THE SPECIES-AREA RELATIONSHIP
 
 ***Question 10***: In your own words, describe the species-area relationship.
 
-> ***Answer 10***: 
+> ***Answer 10***: The species-area relationship shows how fast we find new species as we sample more area.
 
 
 In the R code chunk below, provide the code to: 
@@ -270,9 +353,24 @@ In the R code chunk below, provide the code to:
 
 ```{r, results = 'hide', message = FALSE, warning = FALSE}
 # 1. Declare variables to hold simulated community and species information 
+community <- c() # an initiall empty community
+species <- c() # with zero species
 
 # 2. Populate the simulated landscape
+# initiate the plot, i.e., landscape
+plot(0, 0, col='white', xlim = c(0, 100), ylim = c(0, 100), xlab='x coordinate', ylab='y coordinate', main='A simulated landscape occupied by 100 species, having 1 to 1000 individuals each.')
 
+while (length(community) < 100){ # while the community has less than 100 species
+  # choose the mean, standard deviation, and species color at random
+  std <- runif(1, 1, 10) # random sample from a uniform distribution
+  ab <- sample(1000, 1) # random number between 1 and 1000
+  x <- rnorm(ab, mean = runif(1, 0, 100), sd = std) # 1000 random numbers from a Normal distribution
+  y <- rnorm(ab, mean = runif(1, 0, 100), sd = std) # 1000 random numbers from a Normal distribution
+  color <- c(rgb(runif(1),runif(1),runif(1))) # Let each species have a randomly chosen color
+  points(x, y, pch=".", col=color) # Add points to a plot
+  species <- list(x, y, color) # The species color, x-coords, and y-coords
+  community[[length(community)+1]] <- species # Add the species info to the community
+}
 
 ```
 
@@ -283,10 +381,32 @@ While consult the handout for assistance, in the R chunk below, provide the code
 
 ```{r}
 # 1. Declare the spatial extent and lists to hold species richness and area data
+lim <- 10 # smallest spatial extent. This also equals the spatial grain.
+S.list <- c() # holds the number of species
+A.list <- c() # holds the spatial scales
 
 # 2. Construct a 'while' loop and 'for' loop combination to quantify the numbers of species for progressively larger areas of the simulated landscape.
+while (lim <= 100){ # while the spatial extent is less than or equal to 100...
+  S <- 0 # initiate richness at zero
+  for (sp in community){ # for each species in the community
+    xs <- sp[[1]] # assign the x coordinates
+    ys <- sp[[2]] # assign the y coordinates
+    sp.name <- sp[[3]] # assign the species name
+    xy.coords <- cbind(xs, ys) # combine the columns for x and y coordinates
+    for (xy in xy.coords){ # for each pair of xy coordinates
+      if (max(xy) <= lim){ # if the individual is within our current spatial extent...
+        S <- S + 1 # then the species occurs there
+        break # break out of the last for loop because we now know the species occurs inside our samplign 
+        }
+      }
+    }
+    S.list <- c(S.list, log10(S))
+    A.list <- c(A.list, log10(lim^2))
+    lim <- lim * 2 # increase the extent multiplicatively
+  
+}
 
-# 3. Be sure to log10-transform the richness and area data
+
 ```
 
 
@@ -297,18 +417,73 @@ In the R code chunk below, provide the code to:
 3. Add a legend for the z-value (i.e., slope of the SAR)
 
 ```{r, results = 'hide', message = FALSE, warning = FALSE}
+results <- lm(S.list ~ A.list)
+plot(A.list, S.list, col="dark red", pch=20, cex=2, main="Species-area relationship", xlab='ln(Area)', ylab='ln(Richness)')
+
+abline(results, col="red", lwd=2)
+int <- round(results[[1]][[1]],2)
+z <- round(results[[1]][[2]],2)
+legend(x=2, y=2, paste(c('slope = ', z), collapse = " "), cex=0.8, box.lty=0)
 
 ```
 
 
 ***Question 10a***: Describe how richness relates to area in our simulated data by interpreting the slope of the SAR.
 
-> ***Answer 10a***: 
+> ***Answer 10a***: Since the slope of our SAR was .22, this means that increasing the sampling area from 10 to 100 would increase the richness from about 5 to about 13.
 
 ***Question 10b***: What does the y-intercept of the SAR represent?
 
-> ***Answer 10b***: 
+> ***Answer 10b***: It represents the scale at which the (un-log-transformed) SAR curve is stretched vertically, indicating a scalar increase or decrease on the rate new species are discovered with increasing sampling area.
 
 
 ## SYNTHESIS
 Load the dataset you are using for your project. Plot and discuss either the geogrpahic Distance-Decay relationship, the SSADs for at least four species, or any variant of the SAR (e.g., random accumulation of plots or areas, accumulation of contiguous plots or areas, nested design).
+
+
+```{r}
+
+# i will show the ssad's for 4 species in our data set
+
+#load and transform data
+speciesdata <- read.table("/Users/flopsei/GitHub/QB2017_Partee/speciesdata_clean.csv", sep = ",", header = TRUE)
+envdata <- read.table("/Users/flopsei/GitHub/QB2017_Partee/environmentaldata.csv", sep = ",", header = TRUE)
+envdata <- envdata[1:153,]
+
+#data frames
+speciesdatafr <- speciesdata[,5:dim(speciesdata)[2]]
+row.names(speciesdatafr) <- speciesdata$Site.number
+speciesdatafr <- speciesdatafr[order(speciesdata$Site.number),]
+
+envdatafr <- envdata[,8:24]
+row.names(envdatafr) <- envdata$Site.no.
+envdatafr <- envdatafr[order(envdata$Site.no.),]
+
+#as matrix
+speciesdatamat <- as.matrix(speciesdatafr)
+envdatamat <- as.matrix(envdatafr)
+
+speciesnames <- colnames(speciesdatamat)
+
+#to find 4 random species within our data set
+
+par(mfrow = c(2,2))
+
+ct <- 0
+while (ct < 4) { 
+  otu <- sample(1:dim(speciesdatamat)[2], 1) #choose a random species
+  ad <- ssad(otu)
+  if (length(ad) > 10 & sum(ad > 100)) { #if the species is in at least 10 sites with more than 100 indivs
+    ct <- ct + 1
+    plot(density(ad), col = 'red', xlab = 'site abundance', ylab = 'Probability Density', main = speciesnames[otu])
+  }
+}
+
+# The SSADs for the 4 randomly chosen species in our data set follow the expected
+# abundance distribution for species, where most sites that contain a given species
+# will have very low abundances for that species, and only a few sites contain high
+# abundances of species (at least this time when I run it, it will likely pick
+# different species when I knit this to html).
+
+
+```
