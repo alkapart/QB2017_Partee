@@ -131,6 +131,7 @@ while(n <= length(year77plots)) {
   alpha77plots <- c(alpha77plots, SimpE(year77[n,]))
   n <- n + 1
 }
+alpha77plots
 
 year77.db <- vegdist(year77, method = 'bray')
 
