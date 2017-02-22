@@ -605,7 +605,7 @@ mammal.Tree <- read.tree('./data/mammal_best_super_tree_fritz2009.tre')
 mammal.data <- read.table('./data/mammal_BMR.txt', sep = '\t', header = TRUE)
 
 # select the variables we want to analyze
-mammal.data <- mammal.data[ , c('Species', 'BMR_.ml02.hour.', 'Body_mass_for_BMR_.gr.')]
+mammal.data <- mammal.data[ , c('Species', 'BMR_.mlO2.hour.', 'Body_mass_for_BMR_.gr.')]
 mammal.species <- array(mammal.data$Species)
 
 # select the tips in the mammal tree that are also in the dataset
@@ -620,10 +620,10 @@ rownames(pruned.mammal.data) <- pruned.mammal.data$Species
 # look at the relationship between mass and BMR
 
 # run a simple linear regression
-fit <- lm(log10(BMR_.m102.hour.) ~ log10(Body_mass_for_BMR_.gr.),
+fit <- lm(log10(BMR_.mlO2.hour.) ~ log10(Body_mass_for_BMR_.gr.),
           data = pruned.mammal.data)
 plot(log10(pruned.mammal.data$Body_mass_for_BMR_.gr.), 
-     log10(pruned.mammal.data$BMR_.m102.hour.), las = 1, xlab = 'Body mass (kg), log',
+     log10(pruned.mammal.data$BMR_.mlO2.hour.), las = 1, xlab = 'Body mass (kg), log',
      ylab = 'Basal Metabolic Rate (BMR), log')
 abline(a = fit$coefficients[1], b = fit$coefficients[2])
 b1 <- round(fit$coefficients[2], 3)
@@ -635,11 +635,11 @@ text(0.5, 4.5, eqn, pos = 4)
 # correct for phylogeny using 'phylolm()' function from the package 'phylolm'
 
 # run a phylogeny-corrected regression with no bootstrap replicates
-fit.phy <- phylolm(log10(BMR_.m102.hour.) ~ log10(Body_mass_for_BMR_.gr.), 
+fit.phy <- phylolm(log10(BMR_.mlO2.hour.) ~ log10(Body_mass_for_BMR_.gr.), 
                    data = pruned.mammal.data, pruned.mammal.tree, model = 'lambda',
                    boot = 0)
 plot(log10(pruned.mammal.data$Body_mass_for_BMR_.gr.),
-     log10(pruned.mammal.data$BMR_.m102.hour.),
+     log10(pruned.mammal.data$BMR_.mlO2.hour.),
      las = 1, xlab = 'Body mass (kg), log', ylab = 'Basal Metabolic Rate (BMR), log')
 abline(a = fit.phy$coefficients[1], b = fit.phy$coefficients[2])
 b1.phy <- round(fit.phy$coefficients[2], 3)
