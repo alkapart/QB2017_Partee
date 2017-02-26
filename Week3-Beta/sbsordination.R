@@ -34,3 +34,6 @@ envdatafr <- envdatafr[order(envdata$Site.no.),]
 #as matrix
 speciesdatamat <- as.matrix(speciesdatafr)
 envdatamat <- as.matrix(envdatafr)
+
+spec.db <- vegdist(speciesdatafr, method = "bray")
+
